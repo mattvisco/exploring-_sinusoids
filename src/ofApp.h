@@ -7,9 +7,7 @@ class ofApp : public ofBaseApp{
 
 private:
     vector<CircleSine> circleLines;
-    ofPolyline trackingLine;
-    ofPoint trackPoint; // Set off screen so it doesn't show up if tracking not on Ñ hacky, change once classes are implemented
-    int POINTTOTRACK =10;
+    CircleSine closestCircle;
 
 
 public:

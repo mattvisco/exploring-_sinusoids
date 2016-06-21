@@ -39,12 +39,12 @@ void CircleSine::update() {
 
 void CircleSine::updateLine() {
     line.clear();
+    int count = 0;
     for(float i = range[0]; i < range[1]; i+=resolution) {
         ofPoint vertex(cos(i), sin(i));
         vertex *= radius;
-        ofPoint sinusoidAnimate( powf( ofMap(sinusoids[0](i*frame*freq[0]), -1, 1, 0, 1), powers[0] ),
-                                powf( ofMap(sinusoids[1](i*frame*freq[1]), -1, 1, 0, 1), powers[1] ) );
-        vertex *= sinusoidAnimate;
+        
+        vertex *= getSinusoidalAnimation(i);
         vertex += origin;
         
         // To add noise into animation uncomment below ‚Äî you can add noise to x, y, or both ‚Äî feel free to change the parameters of noise
@@ -54,19 +54,42 @@ void CircleSine::updateLine() {
         //        vertex.x += yDelt;
         
         line.addVertex(vertex);
+        if(tracking && count == trackPointCount) {
+            trackPoint = vertex;
+            trackLine.addVertex(trackPoint);
+        }
+        count++;
     }
 }
 
+ofPoint CircleSine::getSinusoidalAnimation(float point) {
+    ofPoint sinusoidAnimate(1,1);
+    if(animXY[0]) sinusoidAnimate.x = powf( ofMap(sinusoids[0](point*frame*freq[0]), -1, 1, 0, 1), powers[0] );
+    if(animXY[1]) sinusoidAnimate.y = powf( ofMap(sinusoids[1](point*frame*freq[1]), -1, 1, 0, 1), powers[1] );
+    return sinusoidAnimate;
+}
+
 void CircleSine::draw() {
+    ofSetColor(255);
     if(lineMode) line.draw();
     else drawPoints();
-        time.drawString(TIMESTR, timeStrPos[0] - 30, timeStrPos[1] - 30);
-        time.drawString(to_string(frame), timeStrPos[0], timeStrPos[1]);
+    
+    // TODO: add variable to toggle text on & off
+    time.drawString(TIMESTR, timeStrPos[0] - 30, timeStrPos[1] - 30);
+    time.drawString(to_string(frame), timeStrPos[0], timeStrPos[1]);
+    if(tracking) {
+        ofSetColor(200, 0, 0);
+        ofDrawCircle(trackPoint, 5);
+        ofSetColor(0, 200, 0);
+        trackLine.draw();
+    }
 }
 
 void CircleSine::drawPoints() {
     for(auto& point : line.getVertices()) {
         ofDrawCircle(point, 2);
+//        ofNoFill();
+//        ofDrawRectangle(point, 5, 5);
     }
 }
 
@@ -76,6 +99,10 @@ void CircleSine::setPosition(ofPoint point) {
 
 void CircleSine::setPosition(float x, float y) {
     setPosition(ofPoint(x,y));
+}
+
+ofPoint CircleSine::getPosition() {
+    return origin;
 }
 
 void CircleSine::setSinusoids(Sinusoids x, Sinusoids y) {
@@ -120,6 +147,14 @@ void CircleSine::setPower(int x, int y) {
     powers[1] = y;
 }
 
+void CircleSine::setXAnimate(bool animate) {
+    animXY[0] = animate;
+}
+
+void CircleSine::setYAnimate(bool animate) {
+    animXY[1] = animate;
+}
+
 void CircleSine::setAnimate(bool animate) {
     CircleSine::animate = animate;
 }
@@ -138,4 +173,17 @@ void CircleSine::stepForward(float t) {
 
 void CircleSine::toggleLineMode() {
     lineMode = !lineMode;
+}
+
+void CircleSine::setTrackDot(int pt) {
+    trackPointCount = pt;
+    tracking = true;
+}
+
+void CircleSine::setTracking(bool track) {
+    tracking = track;
+}
+
+void CircleSine::toggleTracking() {
+    tracking = !tracking;
 }
