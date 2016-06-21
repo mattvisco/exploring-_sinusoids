@@ -5,121 +5,76 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofBackground(0);
-    ofTrueTypeFont::setGlobalDpi(72);
-    time.load("IQFONT.otf", 32, true, true);}
+    
+    // Line 1
+    CircleSine line1;
+    line1.setup();
+    line1.setPosition(250,300);
+    line1.setFrequency(2, 3);
+    line1.setPower(10, 5);
+    circleLines.push_back(line1);
+    
+    // Line 2
+    CircleSine line2;
+    line2.setup();
+    line2.setPosition(650,300);
+    line2.setRange(0, TWO_PI);
+    line2.setSinusoids(sin, cos);
+    line2.setFrequency(70, 20);
+    circleLines.push_back(line2);
+    
+    // Line 3
+    CircleSine line3;
+    line3.setup();
+    line3.setPosition(1050,300);
+    line3.setResolution(0.001);
+    line3.setRange(0, TWO_PI);
+    line3.setSinusoids(sin, cos);
+    line3.setFrequency(20, 20);
+    circleLines.push_back(line3);
+    
+}
 //--------------------------------------------------------------
 void ofApp::update(){
-    for(auto& line : polylines) {
-        line.clear();
+    for(auto& line : circleLines) {
+        line.update();
     }
-    
-    polylines.push_back(circleOscillatingXYPhased(ofPoint(250,300), 0.01));
-    polylines.push_back(circleOscillatingXY(ofPoint(650,300), 0.01));
-    polylines.push_back(circleOscillatingXY(ofPoint(1050,300), 0.001));
-    
-    /* Time Ranges I Like:
-        31.26 -> 31.56
-        7.85 -> 7.87
-        12.54 -> 12.59
-     */
-    // If you want to animate within a specified range change min & max time to range desired
-    // If you want to move slower or faster through range change incBy
-//    float minTime = 7.85;
-//    float minTime = 7.87;
-//    float incBy = 0.00005;
-//    if(animate) {
-//        if(dec){
-//            if(t<=minTime) {
-//                dec = false;
-//                t+=incBy;
-//            } else t-=incBy;
-//        } else {
-//            if(t>minTime) {
-//                t-=incBy;
-//                dec = true;
-//            } else t+=incBy;
-//        }
-//    }
-    if(animate) {
-        t+=0.01; // If animating time range comment this out
-        noise_t+=0.001;
-    }
-    
-//    else t = 0.0;
 }
 
-ofPolyline ofApp::circleOscillatingXY(ofPoint origin, float inc, bool tracking) {
-    ofPolyline line;
-    int count = 0;
-    for(float i = 0; i <= TWO_PI; i+=inc) {
-        ofPoint vertex(cos(i) * AMPLITUDE ,sin(i) * AMPLITUDE );
-        ofPoint sinAnimation(ofMap(sin((i*70)*t), -1, 1, -1, 1), ofMap(cos((i*20)*t), -1, 1, -1, 1)); // (20, 20) / (70,50)
-//        if(animate)
-        vertex *= sinAnimation; // add power function
-        vertex += origin;
-        
-        // To add noise into animation uncomment below — you can add noise to x, y, or both — feel free to change the parameters of noise
-//        float noise = ofNoise( (noise_t * ofMap(i, 0, TWO_PI, 0, 1)) * 5  );// / 100
-//        float yDelt = ofMap(noise, 0,1, -50, 50);
-//        vertex.y += yDelt;
-//        vertex.x += yDelt;
-        
-        line.addVertex(vertex);
-        if(count == POINTTOTRACK && tracking) {
-            trackingLine.addVertex(vertex);
-            trackPoint = vertex;
-        }
-        count++;
-    }
-    return line;
-}
-
-/* Setting I like:
-        1. Cool Flower wave thang: (currently set)
-            powf( ofMap(cos(i*t*2), -1, 1, 0, 1), 10 ), powf( ofMap(cos(i*t*3), -1, 1, 0, 1), 5 )
-            time increments by 0.01
- */
-// Currently applying to XY like about but the phase is shifted — starts from -PI instead of 0
-// TODO: combine oscillating circle functions once put into a separate class — phase shift can be selected via parameter which will allow for code to be combine
-ofPolyline ofApp::circleOscillatingXYPhased(ofPoint origin, float inc) {
-    ofPolyline line;
-    for(float i = -PI; i < PI; i+=inc) {
-        ofPoint vertex(cos(i) * AMPLITUDE, sin(i) * AMPLITUDE);
-        // Raising the sinusoidal animation factor by N power collapses points path — each additional power decreases the time b/w min & max ocillation
-        ofPoint sinusoidAnimate( powf( ofMap(cos(i*t*2), -1, 1, 0, 1), 10 ), powf( ofMap(cos(i*t*3), -1, 1, 0, 1), 5 ) );
-        vertex *= sinusoidAnimate;
-        vertex += origin;
-        line.addVertex(vertex);
-    }
-    return line;
-}
 
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofSetColor(255);
-    string timeStr = "Current time:";
-    time.drawString(timeStr, 30,30);
-    time.drawString(to_string(t), 60,60);
-    for(auto& line : polylines) {
+    for(auto& line : circleLines) {
         line.draw();
     }
-    // Code belows tracks the path of a point
-    // To change which point to track change POINTTOTRACK in ofApp.h
-    // To change the circle that the tracking point is contained in pass true into circleOscillatingXY of the circle you desire
-    // Note: currently only can track one point — if the POINTTOTRACK is to large for the circle being tracked you will not be tracking a point
-    ofSetColor(0, 255, 0);
-    trackingLine.draw();
-    ofSetColor(255, 0, 0);
-    ofDrawCircle(trackPoint, 5);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     // TODO: refine pause and step back — take parameters instead of hardcode
-    if(key == 32) animate = !animate;
-    else if(key == 356) t -= .01;
-    else if(key == 358) t+= .01;}
+    if(key == 32) {
+        for(auto& line : circleLines) {
+            line.toggleAnimation();
+        }
+    }
+    if(key == 112) {
+        for(auto& line : circleLines) {
+            line.toggleLineMode();
+        }
+    }
+    // Add this into the individuals
+    else if(key == 356) {
+        for(auto& line : circleLines) {
+            line.stepBack();
+        }
+    }
+    else if(key == 358) {
+        for(auto& line : circleLines) {
+            line.stepForward();
+        }
+    }
+}
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
@@ -152,7 +107,6 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    cout << t << endl;
 }
 
 //--------------------------------------------------------------
